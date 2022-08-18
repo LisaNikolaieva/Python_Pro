@@ -1,11 +1,19 @@
-from flask import Flask
+from flask import Flask, request
 import sqlite3
 
 app = Flask(__name__)
 
 
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+
 def get_data(query):
     conn = sqlite3.connect('db1.db')
+    conn.row_factory = dict_factory
     cursor = conn.execute(query)
     res = cursor.fetchall()
     conn.close()
@@ -56,6 +64,7 @@ def show_user_history(user_id):
     res = get_data(f"SELECT * FROM 'Transaction' WHERE user='{user_id}'")
     return res
 
+
 @app.get("/user/<user_id>/deposit")
 def show_user_deposit(user_id):
     res = get_data(f"SELECT * FROM Deposit WHERE user_id='{user_id}'")
@@ -63,10 +72,21 @@ def show_user_deposit(user_id):
 
 
 
+#### POST ####
+
+@app.post("/currency/<currency_name>/review")
+def add_currency_rating(currency_name):
+    request_data = request.get_json()
+    comment = request_data['comment']
+    rating = request_data['rating']
+    res = get_data(f"INSERT INTO Rating (currency_name, rating, comment) VALUES ('{currency_name}', '{comment}', '{rating}' )")
+    return res
+
+
 
 
 """
-@app.route("/currency/<currency_name>/review", methods=['POST', 'PUT', 'DELETE'])
+@app.route("/currency/<currency_name>/review", methods=['PUT', 'DELETE'])
 def show_currency_review(currency_name):
     return f'Review: {currency_name}'
 
