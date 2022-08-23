@@ -4,7 +4,7 @@ import sqlite3
 
 app = Flask(__name__)
 
-date_now = datetime.datetime.now().strftime('%d.%m.%Y')
+
 
 
 def dict_factory(cursor, row):
@@ -16,7 +16,7 @@ def dict_factory(cursor, row):
 
 def get_data(query):
     conn = sqlite3.connect('db1.db')
-    # conn.row_factory = dict_factory
+    conn.row_factory = dict_factory
     cursor = conn.execute(query)
     res = cursor.fetchall()
     conn.commit()
@@ -51,14 +51,7 @@ def show_currency_review():
 
 @app.get("/currency/trade/<currency_name_1>/<currency_name_2>")
 def show_currency_trade(currency_name_1, currency_name_2):
-    res0 = get_data(f"""SELECT round(
-                        (SELECT USD_relative_value FROM Currency WHERE date='14.08.2022' AND name='{currency_name_1}')/
-                        (SELECT USD_relative_value FROM Currency WHERE date='14.08.2022' AND name='{currency_name_2}'),
-                        1)""")
-    res1 = get_data(f"""SELECT round(
-                        (SELECT USD_relative_value FROM Currency WHERE name='{currency_name_1}' ORDER BY date DESC LIMIT 1)/
-                        (SELECT USD_relative_value FROM Currency WHERE name='{currency_name_2}' ORDER BY date DESC LIMIT 1),
-                        1)""")
+    date_now = datetime.datetime.now().strftime('%d.%m.%Y')
     res2 = get_data(f"""SELECT round(
                         (SELECT USD_relative_value FROM Currency WHERE name='{currency_name_1}' AND date='{date_now}')/ 
                         (SELECT USD_relative_value FROM Currency WHERE name='{currency_name_2}' AND date='{date_now}'),
@@ -97,28 +90,32 @@ def add_currency_rating(currency_name):
 
 @app.post("/currency/trade/<currency_name_1>/<currency_name_2>")
 def exchange(currency_name_1, currency_name_2):
+    date_now = datetime.datetime.now().strftime('%d.%m.%Y')
     user_id = 1
     amount1 = request.get_json()['amount']
     comission = 0.2 * amount1
     amount1c = amount1 + comission
 
     user_balance1 = \
-        get_data(f"""SELECT balance FROM Account WHERE user_id={user_id} AND currency_name='{currency_name_1}'""")[0][0]
+        get_data(f"""SELECT balance FROM Account WHERE user_id={user_id} AND currency_name='{currency_name_1}'""")[0]['balance']
     user_balance2 = \
-        get_data(f"""SELECT balance FROM Account WHERE user_id={user_id} AND currency_name='{currency_name_2}'""")[0][0]
+        get_data(f"""SELECT balance FROM Account WHERE user_id={user_id} AND currency_name='{currency_name_2}'""")[0]['balance']
 
     cur1_USD_relative_value = \
-        get_data(f"SELECT USD_relative_value FROM Currency WHERE name='{currency_name_1}' AND date='{date_now}'")[0][0]
+        get_data(f"SELECT USD_relative_value FROM Currency WHERE name='{currency_name_1}' AND date='{date_now}'")[0]['USD_relative_value']
     cur2_USD_relative_value = \
-        get_data(f"SELECT USD_relative_value FROM Currency WHERE name='{currency_name_2}' AND date='{date_now}'")[0][0]
+        get_data(f"SELECT USD_relative_value FROM Currency WHERE name='{currency_name_2}' AND date='{date_now}'")[0]['USD_relative_value']
 
     print(f"aaaaaaaaaaaaaaaaaa{user_balance1}")
     need_cur2 = amount1 * cur1_USD_relative_value / cur2_USD_relative_value
     print(f"bbbbbb{need_cur2}")
     existing_amount_currency1 = \
-        get_data(f"SELECT available_quantity FROM Currency WHERE name='{currency_name_1}' AND date='{date_now}'")[0][0]
+        get_data(f"SELECT available_quantity FROM Currency WHERE name='{currency_name_1}' AND date='{date_now}'")[0]['available_quantity']
     existing_amount_currency2 = \
-        get_data(f"SELECT available_quantity FROM Currency WHERE name='{currency_name_2}' AND date='{date_now}'")[0][0]
+        get_data(f"SELECT available_quantity FROM Currency WHERE name='{currency_name_2}' AND date='{date_now}'")[0]['available_quantity']
+
+
+
 
     if (user_balance1 >= amount1) and (existing_amount_currency2 > need_cur2):
         get_data(
