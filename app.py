@@ -188,4 +188,4 @@ def show_user_deposit_id(deposit_id):
 """
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
