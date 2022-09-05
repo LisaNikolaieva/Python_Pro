@@ -1,3 +1,6 @@
+import os
+
+import psycopg2
 from flask import Flask, request
 import datetime
 import sqlite3
@@ -6,11 +9,18 @@ import models
 from models import db
 from models import Currency, Account, Deposit, Rating, Transaction
 
-
+from flask_migrate import Migrate
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db1.db'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db1.db'
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:example@ps:5432/postgres'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_CONNECTION_STR')
+
 db.init_app(app)
+migrate=Migrate(app, db)
+
+
+#psycopg2.connect(dbname="postgres", user="postgres", password="example", host='pythonproject2_db_1', port='5432')
 
 
 def dict_factory(cursor, row):
