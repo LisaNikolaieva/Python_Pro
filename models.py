@@ -1,13 +1,16 @@
-from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import Column, Integer, String, REAL, Text
+from database import Base
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
-db = SQLAlchemy()
 
 
-class Account(db.Model):
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    user_id = db.Column(db.Integer, nullable=False)
-    balance = db.Column(db.REAL, nullable=False)
-    currency_name = db.Column(db.String(20), nullable=False)
+class Account(Base):
+    __tablename__ = 'account'
+    id = Column(Integer, primary_key=True, nullable=False)
+    user_id = Column(Integer, nullable=False)
+    balance = Column(REAL, nullable=False)
+    currency_name = Column(String(20), nullable=False)
 
     def to_dict(self):
         return {
@@ -18,12 +21,13 @@ class Account(db.Model):
         }
 
 
-class Currency(db.Model):
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    name = db.Column(db.String(20), nullable=False)
-    USD_relative_value = db.Column(db.REAL, nullable=False)
-    available_quantity = db.Column(db.REAL, nullable=False)
-    date = db.Column(db.String(20), nullable=False)
+class Currency(Base):
+    __tablename__ = 'currency'
+    id = Column(Integer, primary_key=True, nullable=False)
+    name = Column(String(20), nullable=False)
+    USD_relative_value = Column(REAL, nullable=False)
+    available_quantity = Column(REAL, nullable=False)
+    date = Column(String(20), nullable=False)
 
     def to_dict(self):
         return {
@@ -35,15 +39,16 @@ class Currency(db.Model):
         }
 
 
-class Deposit(db.Model):
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    user_id = db.Column(db.Integer, nullable=False)
-    opening_date = db.Column(db.String(20), nullable=False)
-    closing_date = db.Column(db.String(20))
-    balance = db.Column(db.REAL, nullable=False)
-    interest_rate = db.Column(db.REAL, nullable=False)
-    dividends_account = db.Column(db.String(20), nullable=False)
-    dividends_date = db.Column(db.String(20), nullable=False)
+class Deposit(Base):
+    __tablename__ = 'deposit'
+    id = Column(Integer, primary_key=True, nullable=False)
+    user_id = Column(Integer, nullable=False)
+    opening_date = Column(String(20), nullable=False)
+    closing_date = Column(String(20))
+    balance = Column(REAL, nullable=False)
+    interest_rate = Column(REAL, nullable=False)
+    dividends_account = Column(String(20), nullable=False)
+    dividends_date = Column(String(20), nullable=False)
 
     def to_dict(self):
         return {
@@ -57,11 +62,12 @@ class Deposit(db.Model):
         }
 
 
-class Rating(db.Model):
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    currency_name = db.Column(db.String(20), nullable=False)
-    rating = db.Column(db.Integer, nullable=False)
-    comment = db.Column(db.String(50))
+class Rating(Base):
+    __tablename__ = 'rating'
+    id = Column(Integer, primary_key=True, nullable=False)
+    currency_name = Column(String(20), nullable=False)
+    rating = Column(Integer, nullable=False)
+    comment = Column(String(50))
 
     def to_dict(self):
         return {
@@ -72,17 +78,18 @@ class Rating(db.Model):
         }
 
 
-class Transaction(db.Model):
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    user_id_initial = db.Column(db.Integer)
-    operation_type = db.Column(db.String(60))
-    currency_num_spent = db.Column(db.REAL)
-    currency_num_obtained = db.Column(db.REAL)
-    currency_name_spent = db.Column(db.String(20))
-    currency_name_obtained = db.Column(db.String(20))
-    date_time = db.Column(db.String(20))
-    user_id_final = db.Column(db.Integer)
-    commission = db.Column(db.REAL)
+class Transaction(Base):
+    __tablename__ = 'transaction'
+    id = Column(Integer, primary_key=True, nullable=False)
+    user_id_initial = Column(Integer)
+    operation_type = Column(String(60))
+    currency_num_spent = Column(REAL)
+    currency_num_obtained = Column(REAL)
+    currency_name_spent = Column(String(20))
+    currency_name_obtained = Column(String(20))
+    date_time = Column(String(20))
+    user_id_final = Column(Integer)
+    commission = Column(REAL)
 
     def to_dict(self):
         return {
@@ -98,10 +105,11 @@ class Transaction(db.Model):
         }
 
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    login = db.Column(db.String(20), nullable=False)
-    password = db.Column(db.String(20), nullable=False)
+class User(Base):
+    __tablename__ = 'user'
+    id = Column(Integer, primary_key=True, nullable=False)
+    login = Column(String(20), nullable=False)
+    password = Column(String(20), nullable=False)
 
     def to_dict(self):
         return {
@@ -109,3 +117,10 @@ class User(db.Model):
             'login': self.login,
             'password': self.password
         }
+
+
+class TransactionQueue(Base):
+    __tablename__ = 'TransactionQueue'
+    id = Column(Integer, primary_key=True, nullable=False)
+    transaction_id = Column(String(60), nullable=False)
+    status = Column(String(60), nullable=False)
