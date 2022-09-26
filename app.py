@@ -1,7 +1,7 @@
 import uuid
 
 import psycopg2
-from flask import Flask, request
+from flask import Flask, request, session
 import datetime
 import sqlite3
 import sqlalchemy
@@ -15,6 +15,7 @@ import database
 from celery_worker import task1
 
 app = Flask(__name__)
+app.secret_key = 'djqevbwv'
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db1.db'
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:example@ps:5432/postgres'
 # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_CONNECTION_STR')
@@ -75,26 +76,59 @@ def show_currency_review(currency_name):
     return {'avg': round(currency_rating, 2)}
 
 
-@app.get("/currency/trade/<currency_name_1>/<currency_name_2>")
-def show_currency_trade(currency_name_1, currency_name_2):
+# @app.get("/currency/trade/<currency_name_1>/<currency_name_2>")
+# def show_currency_trade(currency_name_1, currency_name_2):
+#     database.init_db()
+#     date_now = datetime.datetime.now().strftime('%d.%m.%Y')
+#     # res = get_data(f"""SELECT round(
+#     #                     (SELECT USD_relative_value FROM Currency WHERE name='{currency_name_1}' AND date='{date_now}')/
+#     #                     (SELECT USD_relative_value FROM Currency WHERE name='{currency_name_2}' AND date='{date_now}'),
+#     #                     1)""")
+#
+#     res1 = Currency.query.filter_by(name=currency_name_1, date=date_now).first()
+#     res2 = Currency.query.filter_by(name=currency_name_2, date=date_now).first()
+#     return {'value': res1.USD_relative_value / res2.USD_relative_value}
+
+
+@app.route("/user", methods = ['GET', 'POST'])
+def show_balance():
     database.init_db()
-    date_now = datetime.datetime.now().strftime('%d.%m.%Y')
-    # res = get_data(f"""SELECT round(
-    #                     (SELECT USD_relative_value FROM Currency WHERE name='{currency_name_1}' AND date='{date_now}')/
-    #                     (SELECT USD_relative_value FROM Currency WHERE name='{currency_name_2}' AND date='{date_now}'),
-    #                     1)""")
+    if request.method == 'GET':
+        user_name = session.get('user_name')
+        if user_name is None:
+            return '''
+            <html>
+            <form method="post">
+              <div class="container">
+                <label for="uname"><b>Username</b></label>
+                <input type="text" placeholder="Enter Username" name="uname" required>
+            
+                <label for="psw"><b>Password</b></label>
+                <input type="password" placeholder="Enter Password" name="psw" required>
+            
+                <button type="submit">Login</button>
+              </div>
+            </form>
+            </html>  
+            '''
+        else:
+            # res = get_data(f"SELECT currency_name, balance FROM Account WHERE user_id = '{user_id}'")
+            res = Account.query.filter_by(login=user_name).first()
+            return {'cur_name': res.currency_name, 'balance': res.balance}
 
-    res1 = Currency.query.filter_by(name=currency_name_1, date=date_now).first()
-    res2 = Currency.query.filter_by(name=currency_name_2, date=date_now).first()
-    return {'value': res1.USD_relative_value / res2.USD_relative_value}
+    if request.method == 'POST':
+        user_login = request.form.get('uname')
+        user_password = request.form.get('psw')
+        user_info_creds = models.User.query.filter_by(login=user_login, password=user_password).first()
+        if user_info_creds:
+            session['user_name'] = user_login
+            return 'ok'
+        else:
+            return 'nema('
 
 
-@app.get("/user/<user_id>")
-def show_balance(user_id):
-    database.init_db()
-    # res = get_data(f"SELECT currency_name, balance FROM Account WHERE user_id = '{user_id}'")
-    res = Account.query.filter_by(user_id=user_id).first()
-    return {'cur_name': res.currency_name, 'balance': res.balance}
+
+
 
 
 @app.get("/user/<user_id>/history")
@@ -139,10 +173,30 @@ def test1():
     return str(task_obj)
 
 
+@app.get("/currency/trade/<currency_name_1>/<currency_name_2>")
+def init_transaction(currency_name_1, currency_name_2):
+    if session.get('user_name') is not None:
+        return '''
+               <html>
+               <form method="post">
+                 <div class="container">
+                   <label for="uname"><b>amount_currency</b></label>
+                   <input type="text" placeholder="Enter value" name="amount_currency" required>
+
+                   <button type="submit">Submit</button>
+                 </div>
+               </form>
+               </html>  
+               '''
+    else:
+        return 'login first'
+
 @app.post("/currency/trade/<currency_name_1>/<currency_name_2>")
 def exchange(currency_name_1, currency_name_2):
-    user_id = 1
-    amount1 = request.get_json()['amount']
+    #user_id = 1
+    user_id = session.get('user_login')
+    amount1 = float(request.form.get('amount_currency'))
+    #amount1 = request.get_json()['amount']
     transaction_id = uuid.uuid4()
     database.init_db()
     transaction_queue_record = models.TransactionQueue(transaction_id=str(transaction_id), status='in queue')
